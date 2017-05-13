@@ -1,7 +1,8 @@
 pipeline {
   agent any
   parameters {
-    booleanParam(name: 'build_docs', defaultValue: false, description: 'build and upload documentation')
+    booleanParam(name: 'build_docs', defaultValue: false, description: 'build and upload documentation'),
+    string(name: 'THREADS', defaultValue: '2', description: 'available parallelism')
   }
 
   stages {
