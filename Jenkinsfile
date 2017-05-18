@@ -35,6 +35,7 @@ def installPackages(String[] pkgs) {
 
 def buildGhc(boolean runNofib, String cross_target) {
   stage('Clean') {
+    checkout scm
     if (false) {
       sh 'make distclean'
     }
