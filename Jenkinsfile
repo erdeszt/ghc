@@ -23,7 +23,7 @@ def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
 }
 
-def buildGhc(boolean runNofib, String cross_target=null) {
+def buildGhc(boolean runNofib, String cross_target=null, boolean unreg=false) {
   stage('Clean') {
     checkout scm
     if (false) {
@@ -53,9 +53,12 @@ def buildGhc(boolean runNofib, String cross_target=null) {
     }
     writeFile(file: 'mk/build.mk', text: build_mk)
 
-    def target_opt = ''
+    def configure_opts = '--enable-tarballs-autodownload'
     if (cross_target) {
-      target_opt = "--target=${cross_target}"
+      configure_opts += "--target=${cross_target}"
+    }
+    if (unreg) {
+      configure_opts += "--enable-unregisterised"
     }
     sh """
        ./boot
