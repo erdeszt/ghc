@@ -12,13 +12,26 @@ properties(
   ])
 
 parallel (
-  "linux x86-64"       : {node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib)}},
-  "linux x86-64 unreg" : {node(label: 'linux && amd64') {buildGhc(unreg: true)}},
+  "linux x86-64"       : {
+    node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib)}
+  },
+  "linux x86-64 -> aarch64 unreg" : {
+    node(label: 'linux && amd64') {buildGhc(crossTarget: 'aarch64-linux-gnu', unreg: true)}
+  },
   "linux x86-64 -> aarch64" : {
-    node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib, crossTarget: 'aarch64-linux-gnu')}},
-  "aarch64"            : {node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}},
-  "windows 64"         : {node(label: 'windows && amd64') {buildGhc(msys: 64)}},
-  "windows 32"         : {node(label: 'windows && amd64') {buildGhc(msys: 32)}},
+    node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib, crossTarget: 'aarch64-linux-gnu')}
+  },
+  "aarch64"            : {
+    node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}
+  },
+  // Requires cygpath plugin?
+  // Make
+  "windows 64"         : {
+    node(label: 'windows && amd64') {buildGhc(msys: 64)}
+  },
+  "windows 32"         : {
+    node(label: 'windows && amd64') {buildGhc(msys: 32)}
+  },
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
 
