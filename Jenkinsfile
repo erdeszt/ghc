@@ -12,11 +12,13 @@ properties(
   ])
 
 parallel (
-  "linux x86-64" : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
+  "linux x86-64"       : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
+  "linux x86-64 unreg" : {node(label: 'linux && amd64') {buildGhc(false, null, false)}},
   "linux x86-64 -> aarch64" : {
-                    node(label: 'linux && amd64') {buildGhc(params.runNofib, 'aarch64-linux-gnu')}},
-  "aarch64"      : {node(label: 'linux && aarch64') {buildGhc(false)}},
-  //"osx"          : {node(label: 'darwin') {buildGhc(false)}}
+                          node(label: 'linux && amd64') {buildGhc(params.runNofib, 'aarch64-linux-gnu')}},
+  "aarch64"            : {node(label: 'linux && aarch64') {buildGhc(false)}},
+  "windows 64"         : {node(label: 'windows && amd64') {buildGhc(false)}},
+  //"osx"                : {node(label: 'darwin') {buildGhc(false)}}
 )
 
 def installPackages(String[] pkgs) {
