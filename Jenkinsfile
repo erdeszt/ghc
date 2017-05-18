@@ -11,19 +11,23 @@ properties(
       ])
   ])
 
-//node { buildGhc(runNofib: params.runNofib) }
-node(label: 'linux && amd64') {
-  buildGhc(false)
-}
-node(label: 'aarch64') {
-  buildGhc(false)
-}
+parallel (
+  "linux x86-64" : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
+  "aarch64"      : {node(label: 'aarch64') {buildGhc(false)}},
+  "osx"          : {node(label: 'darwin') {buildGhc(false)}}
+)
 
-def installPackages(pkgs) {
+def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
 }
 
-def buildGhc(runNofib) {
+def buildGhc(boolean runNofib) {
+  stage('Clean') {
+    if (false) {
+      sh 'make distclean'
+    }
+  }
+
   stage('Build') {
     sh 'git submodule update --init --recursive'
     def speed = 'NORMAL'
