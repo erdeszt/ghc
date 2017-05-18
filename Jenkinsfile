@@ -33,7 +33,7 @@ def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
 }
 
-def buildGhc(boolean runNofib, String cross_target) {
+def buildGhc(boolean runNofib, String cross_target=null) {
   stage('Clean') {
     checkout scm
     if (false) {
@@ -55,9 +55,10 @@ def buildGhc(boolean runNofib, String cross_target) {
                """
     if (cross_target) {
       build_mk += """
+                  # Cross compiling
                   HADDOCK_DOCS=NO
-                  SPHINX_HTML_DOCS=NO
-                  SPHINX_PDF_DOCS=NO
+                  BUILD_SPHINX_HTML=NO
+                  BUILD_SPHINX_PDF=NO
                   """
     }
     writeFile(file: 'mk/build.mk', text: build_mk)
