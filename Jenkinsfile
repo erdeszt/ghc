@@ -47,9 +47,11 @@ def buildGhc(params) {
 
   stage('Checkout') {
     checkout scm
-    sh """git submodule update --init --recursive
-          echo hello
-       """
+    if (msys) {
+      bat "git submodule update --init --recursive"
+    } else {
+      sh "git submodule update --init --recursive"
+    }
   }
 
   stage('Build') {
