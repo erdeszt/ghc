@@ -11,9 +11,19 @@ properties(
       ])
   ])
 
+if (true) {
+  node(label: 'linux && aarch64') {
+    stage('Testing') {
+      sh 'pwd'
+      git 'git://git.haskell.org/ghc'
+      sh 'ls'
+    }
+  }
+}
+
 parallel (
   "linux x86-64" : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
-  "aarch64"      : {node(label: 'aarch64') {buildGhc(false)}},
+  "aarch64"      : {node(label: 'linux && aarch64') {buildGhc(false)}},
   "osx"          : {node(label: 'darwin') {buildGhc(false)}}
 )
 
