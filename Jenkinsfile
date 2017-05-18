@@ -23,15 +23,17 @@ if (true) {
 
 parallel (
   "linux x86-64" : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
+  "linux x86-64 -> aarch64" : {
+                    node(label: 'linux && amd64') {buildGhc(params.runNofib, 'aarch64-linux-gnu')}},
   "aarch64"      : {node(label: 'linux && aarch64') {buildGhc(false)}},
-  "osx"          : {node(label: 'darwin') {buildGhc(false)}}
+  //"osx"          : {node(label: 'darwin') {buildGhc(false)}}
 )
 
 def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
 }
 
-def buildGhc(boolean runNofib) {
+def buildGhc(boolean runNofib, String cross_target) {
   stage('Clean') {
     if (false) {
       sh 'make distclean'
@@ -44,23 +46,34 @@ def buildGhc(boolean runNofib) {
     if (params.nightly) {
       speed = 'SLOW'
     }
-    writeFile(
-      file: 'mk/build.mk',
-      text: """
-            Validating=YES
-            ValidateSpeed=${speed}
-            ValidateHpc=NO
-            BUILD_DPH=NO
-            """)
+    build_mk = """
+               Validating=YES
+               ValidateSpeed=${speed}
+               ValidateHpc=NO
+               BUILD_DPH=NO
+               """
+    if (cross_target) {
+      build_mk += """
+                  HADDOCK_DOCS=NO
+                  SPHINX_HTML_DOCS=NO
+                  SPHINX_PDF_DOCS=NO
+                  """
+    }
+    writeFile(file: 'mk/build.mk', text: build_mk)
+
+    def target_opt = ''
+    if (cross_target) {
+      target_opt = "--target=${cross_target}"
+    }
     sh """
        ./boot
-       ./configure --enable-tarballs-autodownload
+       ./configure --enable-tarballs-autodownload ${target_opt}
        make -j${env.THREADS}
        """
   }
 
   stage('Install testsuite dependencies') {
-    if (params.nightly) {
+    if (params.nightly && !cross_target) {
       def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
                   'random', 'regex-compat', 'syb', 'stm', 'utf8-string',
                   'vector']
@@ -69,15 +82,17 @@ def buildGhc(boolean runNofib) {
   }
 
   stage('Run testsuite') {
-    def target = 'test'
-    if (params.nightly) {
-      target = 'slowtest'
+    if (!cross_target) {
+      def target = 'test'
+      if (params.nightly) {
+        target = 'slowtest'
+      }
+      sh "make THREADS=${env.THREADS} ${target}"
     }
-    sh "make THREADS=${env.THREADS} ${target}"
   }
 
   stage('Run nofib') {
-    if (runNofib) {
+    if (runNofib && !cross_target) {
       installPkgs(['regex-compat'])
       sh """
          cd nofib
