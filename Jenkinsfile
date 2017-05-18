@@ -34,10 +34,12 @@ def buildGhc(params) {
 
   stage('Checkout') {
     checkout scm
+    sh """git submodule update --init --recursive
+          echo hello
+       """
   }
 
   stage('Build') {
-    sh 'git submodule update --init --recursive'
     def speed = 'NORMAL'
     if (params.nightly) {
       speed = 'SLOW'
