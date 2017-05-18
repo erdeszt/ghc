@@ -12,25 +12,28 @@ properties(
   ])
 
 parallel (
-  "linux x86-64"       : {node(label: 'linux && amd64') {buildGhc(params.runNofib)}},
-  "linux x86-64 unreg" : {node(label: 'linux && amd64') {buildGhc(false, null, false)}},
+  "linux x86-64"       : {node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib)}},
+  "linux x86-64 unreg" : {node(label: 'linux && amd64') {buildGhc(unreg: true)}},
   "linux x86-64 -> aarch64" : {
-                          node(label: 'linux && amd64') {buildGhc(params.runNofib, 'aarch64-linux-gnu')}},
-  "aarch64"            : {node(label: 'linux && aarch64') {buildGhc(false)}},
-  "windows 64"         : {node(label: 'windows && amd64') {buildGhc(false)}},
-  //"osx"                : {node(label: 'darwin') {buildGhc(false)}}
+    node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib, crossTarget: 'aarch64-linux-gnu')}},
+  "aarch64"            : {node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}},
+  "windows 64"         : {node(label: 'windows && amd64') {buildGhc(msys: 64)}},
+  "windows 32"         : {node(label: 'windows && amd64') {buildGhc(msys: 32)}},
+  //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
 
 def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
 }
 
-def buildGhc(boolean runNofib, String cross_target=null, boolean unreg=false) {
-  stage('Clean') {
+def buildGhc(params) {
+  boolean runNoFib = params?.runNofib ?: false
+  String crossTarget = params?.crossTarget
+  boolean unreg = params?.unreg ?: false
+  String msys = params?.msys;
+
+  stage('Checkout') {
     checkout scm
-    if (false) {
-      sh 'make distclean'
-    }
   }
 
   stage('Build') {
@@ -45,32 +48,34 @@ def buildGhc(boolean runNofib, String cross_target=null, boolean unreg=false) {
                ValidateHpc=NO
                BUILD_DPH=NO
                """
-    if (cross_target) {
+    if (crossTarget) {
       build_mk += """
                   # Cross compiling
                   HADDOCK_DOCS=NO
                   BUILD_SPHINX_HTML=NO
                   BUILD_SPHINX_PDF=NO
+                  INTEGER_LIBRARY=integer-simple
+                  WITH_TERMINFO=NO
                   """
     }
     writeFile(file: 'mk/build.mk', text: build_mk)
 
     def configure_opts = '--enable-tarballs-autodownload'
-    if (cross_target) {
-      configure_opts += "--target=${cross_target}"
+    if (crossTarget) {
+      configure_opts += "--target=${crossTarget}"
     }
     if (unreg) {
       configure_opts += "--enable-unregisterised"
     }
     sh """
        ./boot
-       ./configure --enable-tarballs-autodownload ${target_opt}
+       ./configure ${configure_opts}
        make -j${env.THREADS}
        """
   }
 
   stage('Install testsuite dependencies') {
-    if (params.nightly && !cross_target) {
+    if (params.nightly && !crossTarget) {
       def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
                   'random', 'regex-compat', 'syb', 'stm', 'utf8-string',
                   'vector']
@@ -79,7 +84,7 @@ def buildGhc(boolean runNofib, String cross_target=null, boolean unreg=false) {
   }
 
   stage('Run testsuite') {
-    if (!cross_target) {
+    if (!crossTarget) {
       def target = 'test'
       if (params.nightly) {
         target = 'slowtest'
@@ -89,7 +94,7 @@ def buildGhc(boolean runNofib, String cross_target=null, boolean unreg=false) {
   }
 
   stage('Run nofib') {
-    if (runNofib && !cross_target) {
+    if (runNofib && !crossTarget) {
       installPkgs(['regex-compat'])
       sh """
          cd nofib
