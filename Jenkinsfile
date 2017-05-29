@@ -18,6 +18,33 @@ properties(
       ])
   ])
 
+
+stage("Build source distribution") {
+  node(label: 'linux') {
+    stage("Checking out tree") {
+      checkout scm
+      sh """
+         git submodule update --init --recursive
+         mk/get-win32-tarballs.sh fetch all
+         """
+    }
+    stage("Configuring tree") {
+      sh """
+        ./boot
+        ./configure
+        """
+    }
+    stage("Build tarballs") {
+      sh "make sdist"
+      sh "mv sdistprep/ghc-*.tar.xz ghc-src.tar.xz"
+      sh "mv sdistprep/ghc-*-testsuite.tar.xz ghc-testsuite.tar.xz"
+      sh "mv sdistprep/ghc-*-windows-extra-src-*.tar.xz ghc-win32-tarballs.tar.xz"
+      stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz')
+      stash(name: 'testsuite-dist', includes: 'ghc-testsuite.tar.xz')
+    }
+  }
+}
+
 parallel (
   "linux x86-64"       : {
     node(label: 'linux && amd64') {
@@ -103,70 +130,66 @@ def buildGhc(params) {
   boolean disableLargeAddrSpace = params?.disableLargeAddrSpace ?: false
   String makeCmd = params?.makeCmd ?: 'make'
 
-  stage('Checkout') {
-    checkout scm
-    sh "git submodule update --init --recursive"
-    //sh "${makeCmd} distclean"
-  }
+  withGhcSrcDist() {
+    stage('Configure') {
+      def speed = 'NORMAL'
+      if (params.nightly) {
+        speed = 'SLOW'
+      }
+      build_mk = """
+                Validating=YES
+                ValidateSpeed=${speed}
+                ValidateHpc=NO
+                BUILD_DPH=NO
+                """
+      if (cross) {
+        build_mk += """
+                    # Cross compiling
+                    HADDOCK_DOCS=NO
+                    BUILD_SPHINX_HTML=NO
+                    BUILD_SPHINX_PDF=NO
+                    INTEGER_LIBRARY=integer-simple
+                    WITH_TERMINFO=NO
+                    """
+      }
+      writeFile(file: 'mk/build.mk', text: build_mk)
 
-  stage('Configure') {
-    def speed = 'NORMAL'
-    if (params.nightly) {
-      speed = 'SLOW'
+      def configure_opts = []
+      if (cross) {
+        configure_opts += '--target=${targetTriple}'
+      }
+      if (disableLargeAddrSpace) {
+        configure_opts += '--disable-large-address-space'
+      }
+      if (unreg) {
+        configure_opts += '--enable-unregisterised'
+      }
+      sh """
+        ./boot
+        ./configure ${configure_opts.join(' ')}
+        """
     }
-    build_mk = """
-               Validating=YES
-               ValidateSpeed=${speed}
-               ValidateHpc=NO
-               BUILD_DPH=NO
-               """
-    if (cross) {
-      build_mk += """
-                  # Cross compiling
-                  HADDOCK_DOCS=NO
-                  BUILD_SPHINX_HTML=NO
-                  BUILD_SPHINX_PDF=NO
-                  INTEGER_LIBRARY=integer-simple
-                  WITH_TERMINFO=NO
-                  """
-    }
-    writeFile(file: 'mk/build.mk', text: build_mk)
 
-    def configure_opts = ['--enable-tarballs-autodownload']
-    if (cross) {
-      configure_opts += '--target=${targetTriple}'
+    stage('Build') {
+      sh "${makeCmd} -j${env.THREADS}"
     }
-    if (disableLargeAddrSpace) {
-      configure_opts += '--disable-large-address-space'
-    }
-    if (unreg) {
-      configure_opts += '--enable-unregisterised'
-    }
-    sh """
-       ./boot
-       ./configure ${configure_opts.join(' ')}
-       """
-  }
 
-  stage('Build') {
-    sh "${makeCmd} -j${env.THREADS}"
-  }
-
-  stage('Prepare binary distribution') {
-    sh "${makeCmd} binary-dist"
-    def json = new JSONObject()
-    def tarPath = getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
-    def tarName = sh(script: "basename ${tarPath}", returnStdout: true)
-    json.put('commit', resolveCommitSha('HEAD'))
-    json.put('tarName', tarName)
-    json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
-    json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
-    json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
-    echo "${json}"
-    writeJSON(file: 'bindist.json', json: json)
-    // Write a file so we can easily file the tarball and bindist directory later
-    stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
-    archiveArtifacts "${tarName}"
+    stage('Prepare binary distribution') {
+      sh "${makeCmd} binary-dist"
+      def json = new JSONObject()
+      def tarPath = getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
+      def tarName = sh(script: "basename ${tarPath}", returnStdout: true)
+      json.put('commit', resolveCommitSha('HEAD'))
+      json.put('tarName', tarName)
+      json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
+      json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
+      json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
+      echo "${json}"
+      writeJSON(file: 'bindist.json', json: json)
+      // Write a file so we can easily file the tarball and bindist directory later
+      stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
+      archiveArtifacts "${tarName}"
+    }
   }
 }
 
@@ -174,16 +197,44 @@ def getMakeValue(String makeCmd, String value) {
   return sh(script: "${makeCmd} -s echo VALUE=${value}", returnStdout: true)
 }
 
-def withGhcBinDist(String targetTriple, Closure f) {
-  unstash "bindist-${targetTriple}"
-  def metadata = readJSON file: "bindist.json"
-  echo "${metadata}"
-  sh "tar -xf ${metadata.tarName}"
-  dir("${metadata.dirName}") {
+def withTempDir(String name, Closure f) {
+  sh "mkdir ${name}"
+  dir(name) {
     try {
       f()
     } finally {
       deleteDir()
+    }
+  }
+}
+
+def withGhcSrcDist(Closure f) {
+  withTempDir('src-dist') {
+    stage('Unpack source distribution') {
+      unstash(name: "source-dist")
+      sh 'tar -xf ghc-src.tar.xz'
+      sh 'tar -xf ghc-win32-tarballs.tar.xz'
+    }
+    dir('ghc-*') {
+      f()
+    }
+  }
+}
+
+def withGhcBinDist(String targetTriple, Closure f) {
+  withTempDir('bin-dist') {
+    unstash "bindist-${targetTriple}"
+    unstash "testsuite-dist"
+    def metadata = readJSON file: "bindist.json"
+    echo "${metadata}"
+    sh "tar -xf ${metadata.tarName}"
+    sh "tar -xf ghc-testsuite.tar.xz"
+    dir("${metadata.dirName}") {
+      try {
+        f()
+      } finally {
+        deleteDir()
+      }
     }
   }
 }
