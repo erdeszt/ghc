@@ -25,7 +25,7 @@ parallel (
     node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}
   },
   "freebsd"            : {
-    node(label: 'freebsd && amd64') {buildGhc(runNoFib: false)}
+    node(label: 'freebsd && amd64') {buildGhc(runNoFib: false, makeCmd: 'gmake')}
   },
   // Requires cygpath plugin?
   // Make
@@ -54,6 +54,7 @@ def buildGhc(params) {
   boolean runNoFib = params?.runNofib ?: false
   String crossTarget = params?.crossTarget
   boolean unreg = params?.unreg ?: false
+  String makeCmd = params?.makeCmd ?: 'make'
 
   stage('Checkout') {
     checkout scm
@@ -97,11 +98,13 @@ def buildGhc(params) {
   }
 
   stage('Build') {
-    sh "make -j${env.THREADS}"
+    sh "${makeCmd} -j${env.THREADS}"
   }
 }
 
-def testGhc() {
+def testGhc(params) {
+  String makeCmd = params?.makeCmd ?: 'make'
+
   stage('Install testsuite dependencies') {
     if (params.nightly && !crossTarget) {
       def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
@@ -117,7 +120,7 @@ def testGhc() {
       if (params.nightly) {
         target = 'slowtest'
       }
-      sh "make THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} THREADS=${env.THREADS} ${target}"
     }
   }
 
@@ -126,9 +129,9 @@ def testGhc() {
       installPkgs(['regex-compat'])
       sh """
          cd nofib
-         make clean
-         make boot
-         make >../nofib.log 2>&1
+         ${makeCmd} clean
+         ${makeCmd} boot
+         ${makeCmd} >../nofib.log 2>&1
          """
       archive 'nofib.log'
     }
@@ -136,8 +139,8 @@ def testGhc() {
 
   stage('Prepare bindist') {
     if (params.buildBindist) {
-      sh "make binary-dist"
       archive 'ghc-*.tar.xz'
+      sh "${makeCmd} binary-dist"
     }
   }
 }
