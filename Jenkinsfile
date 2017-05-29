@@ -133,14 +133,14 @@ def testGhc(params) {
          ${makeCmd} boot
          ${makeCmd} >../nofib.log 2>&1
          """
-      archive 'nofib.log'
+      archiveArtifacts 'nofib.log'
     }
   }
 
   stage('Prepare bindist') {
     if (params.buildBindist) {
-      archive 'ghc-*.tar.xz'
       sh "${makeCmd} binary-dist"
+      archiveArtifacts 'ghc-*.tar.xz'
     }
   }
 }
