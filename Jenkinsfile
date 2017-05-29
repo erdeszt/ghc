@@ -25,7 +25,7 @@ parallel (
     node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}
   },
   "freebsd"            : {
-    node(label: 'freebsd && aarch64') {buildGhc(runNoFib: false)}
+    node(label: 'freebsd && amd64') {buildGhc(runNoFib: false)}
   },
   // Requires cygpath plugin?
   // Make
