@@ -25,7 +25,9 @@ parallel (
     node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}
   },
   "freebsd"            : {
-    node(label: 'freebsd && amd64') {buildGhc(runNoFib: false, makeCmd: 'gmake')}
+    node(label: 'freebsd && amd64') {
+      buildGhc(runNoFib: false, makeCmd: 'gmake', disableLargeAddrSpace: true)
+    }
   },
   // Requires cygpath plugin?
   // Make
@@ -56,6 +58,7 @@ def buildGhc(params) {
   boolean runNoFib = params?.runNofib ?: false
   String crossTarget = params?.crossTarget
   boolean unreg = params?.unreg ?: false
+  boolean disableLargeAddrSpace = params?.disableLargeAddrSpace ?: false
   String makeCmd = params?.makeCmd ?: 'make'
 
   stage('Checkout') {
@@ -89,6 +92,9 @@ def buildGhc(params) {
     def configure_opts = '--enable-tarballs-autodownload'
     if (crossTarget) {
       configure_opts += "--target=${crossTarget}"
+    }
+    if (disableLargeAddrSpace) {
+      configure_opts += "--disable-large-address-space"
     }
     if (unreg) {
       configure_opts += "--enable-unregisterised"
