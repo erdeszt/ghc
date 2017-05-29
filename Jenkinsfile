@@ -35,8 +35,10 @@ parallel (
     node(label: 'windows && amd64') {
       sh """
          export MSYSTEM=MINGW32
-         # PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin:$PATH'
+         # Profile tries to read PRINTER and fails due to lack of a newline, hence disabling e
+         set +e
          source /etc/profile
+         set -e
          """
       buildGhc(runNoFib: false)
     }
