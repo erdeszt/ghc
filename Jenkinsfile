@@ -30,10 +30,18 @@ parallel (
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
-    node(label: 'windows && amd64') {buildGhc(msys: 64)}
+    environment {
+      PATH = 'C:\\msys64\\mingw64\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-x86_64:$PATH'
+    }
+    node(label: 'windows && amd64') {buildGhc()}
   },
   "windows 32"         : {
-    node(label: 'windows && amd64') {buildGhc(msys: 32)}
+    node(label: 'windows && amd64') {
+      environment {
+        PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386:$PATH'
+      }
+      buildGhc()
+    }
   },
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
@@ -46,7 +54,6 @@ def buildGhc(params) {
   boolean runNoFib = params?.runNofib ?: false
   String crossTarget = params?.crossTarget
   boolean unreg = params?.unreg ?: false
-  String msys = params?.msys;
 
   stage('Checkout') {
     checkout scm
