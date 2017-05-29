@@ -32,11 +32,14 @@ parallel (
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
-      environment {
-        MSYSTEM=MINGW32
-        PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin:$PATH'
-      }
-    node(label: 'windows && amd64') {buildGhc(runNoFib: false)}
+    node(label: 'windows && amd64') {
+      sh """
+         export MSYSTEM=MINGW32
+         # PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin:$PATH'
+         source /etc/profile
+         """
+      buildGhc(runNoFib: false)
+    }
   },
   "windows 32"         : {
     node(label: 'windows && amd64') {
