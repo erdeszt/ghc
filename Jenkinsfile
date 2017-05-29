@@ -30,14 +30,14 @@ parallel (
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
-    node(label: 'windows && amd64') {buildGhc()}
+    node(label: 'windows && amd64') {buildGhc(runNoFib: false)}
   },
   "windows 32"         : {
     node(label: 'windows && amd64') {
       environment {
         PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386:$PATH'
       }
-      buildGhc()
+      buildGhc(runNoFib: false)
     }
   },
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
