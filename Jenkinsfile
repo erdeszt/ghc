@@ -24,6 +24,9 @@ parallel (
   "aarch64"            : {
     node(label: 'linux && aarch64') {buildGhc(runNoFib: false)}
   },
+  "freebsd"            : {
+    node(label: 'freebsd && aarch64') {buildGhc(runNoFib: false)}
+  },
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
@@ -47,14 +50,10 @@ def buildGhc(params) {
 
   stage('Checkout') {
     checkout scm
-    if (msys) {
-      bat "git submodule update --init --recursive"
-    } else {
-      sh "git submodule update --init --recursive"
-    }
+    sh "git submodule update --init --recursive"
   }
 
-  stage('Build') {
+  stage('Configure') {
     def speed = 'NORMAL'
     if (params.nightly) {
       speed = 'SLOW'
@@ -87,10 +86,15 @@ def buildGhc(params) {
     sh """
        ./boot
        ./configure ${configure_opts}
-       make -j${env.THREADS}
        """
   }
 
+  stage('Build') {
+    sh "make -j${env.THREADS}"
+  }
+}
+
+def testGhc() {
   stage('Install testsuite dependencies') {
     if (params.nightly && !crossTarget) {
       def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
