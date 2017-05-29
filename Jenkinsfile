@@ -30,9 +30,6 @@ parallel (
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
-    environment {
-      PATH = 'C:\\msys64\\mingw64\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-x86_64:$PATH'
-    }
     node(label: 'windows && amd64') {buildGhc()}
   },
   "windows 32"         : {
