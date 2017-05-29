@@ -12,6 +12,7 @@ properties(
   ])
 
 parallel (
+  /*
   "linux x86-64"       : {
     node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib)}
   },
@@ -29,6 +30,7 @@ parallel (
       buildGhc(runNoFib: false, makeCmd: 'gmake', disableLargeAddrSpace: true)
     }
   },
+  */
   // Requires cygpath plugin?
   // Make
   "windows 64"         : {
@@ -43,6 +45,7 @@ parallel (
       buildGhc(runNoFib: false)
     }
   },
+  /*
   "windows 32"         : {
     node(label: 'windows && amd64') {
       environment {
@@ -52,6 +55,7 @@ parallel (
       buildGhc(runNoFib: false)
     }
   },
+  */
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
 
