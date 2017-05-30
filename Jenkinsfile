@@ -108,19 +108,19 @@ def buildGhc(params) {
     }
     writeFile(file: 'mk/build.mk', text: build_mk)
 
-    def configure_opts = '--enable-tarballs-autodownload'
+    def configure_opts = ['--enable-tarballs-autodownload']
     if (crossTarget) {
-      configure_opts += "--target=${crossTarget}"
+      configure_opts += '--target=${crossTarget}'
     }
     if (disableLargeAddrSpace) {
-      configure_opts += "--disable-large-address-space"
+      configure_opts += '--disable-large-address-space'
     }
     if (unreg) {
-      configure_opts += "--enable-unregisterised"
+      configure_opts += '--enable-unregisterised'
     }
     sh """
        ./boot
-       ./configure ${configure_opts}
+       ./configure ${configure_opts.join(' ')}
        """
   }
 
