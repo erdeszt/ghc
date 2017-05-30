@@ -12,7 +12,6 @@ properties(
   ])
 
 parallel (
-  /*
   "linux x86-64"       : {
     node(label: 'linux && amd64') {buildGhc(runNoFib: params.runNofib)}
   },
@@ -30,25 +29,22 @@ parallel (
       buildGhc(runNoFib: false, makeCmd: 'gmake', disableLargeAddrSpace: true)
     }
   },
-  */
   // Requires cygpath plugin?
-  // Make
   "windows 64"         : {
     node(label: 'windows && amd64') {
       withMingw('MINGW64') { buildGhc(runNoFib: false) }
     }
   },
-  /*
   "windows 32"         : {
     node(label: 'windows && amd64') {
-      buildGhc(runNoFib: false)
+      withMingw('MINGW64') { buildGhc(runNoFib: false) }
     }
   },
-  */
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
 
 def withMingw(String msystem, Closure f) {
+  // Derived from msys2's /etc/msystem
   def msysRoot = 'C:\\msys64'
   if (msystem == 'MINGW32') {
     prefix = '${msysRoot}\\mingw32'
