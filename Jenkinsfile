@@ -148,8 +148,9 @@ def buildGhc(params) {
     sh "${makeCmd} binary-dist"
     def tarName = sh(script: "${makeCmd} -s echo VALUE=BIN_DIST_PREP_TAR_COMP",
                      returnStdout: true)
-    def ghcVersion = sh(script: "${makeCmd} -s echo VALUE=ProjectVersion")
-    writeFile "ghc-version" ghcVersion
+    def ghcVersion = sh(script: "${makeCmd} -s echo VALUE=ProjectVersion",
+                        returnStdout: true)
+    writeFile(file: "ghc-version", text: ghcVersion)
     archiveArtifacts "../${tarName}"
     // Write a file so we can easily file the tarball and bindist directory later
     stash(name: "bindist-${targetTriple}", includes: "ghc-version,../${tarName}")
@@ -205,7 +206,7 @@ def testGhc(params) {
 // Expects to be sitting in a build source tree.
 def updateReadTheDocs() {
   git clone 'git@github.com:bgamari/ghc-users-guide'
-  def commit = sh("git rev-parse HEAD", returnStdout=true)
+  def commit = sh(script: "git rev-parse HEAD", returnStdout=true)
   sh """
      export GHC_TREE=$(pwd)
      cd ghc-users-guide
