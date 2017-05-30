@@ -206,12 +206,12 @@ def testGhc(params) {
 // Expects to be sitting in a build source tree.
 def updateReadTheDocs() {
   git clone 'git@github.com:bgamari/ghc-users-guide'
-  def commit = sh(script: "git rev-parse HEAD", returnStdout=true)
+  def commit = sh(script: "git rev-parse HEAD", returnStdout: true)
   sh """
-     export GHC_TREE=$(pwd)
+     export GHC_TREE=\$(pwd)
      cd ghc-users-guide
      ./export.sh
-     git commit -a -m "Update to ghc commit ${commit}" || true
+     git commit -a -m \"Update to ghc commit ${commit}\" || true
      git push
      """
 }
@@ -219,23 +219,21 @@ def updateReadTheDocs() {
 // Push update to downloads.haskell.org/~ghc/master/doc.
 // Expects to be sitting in a configured source tree.
 def updateUsersGuide() {
-  sh """
-     $(makeCmd) html haddock EXTRA_HADDOCK_OPTS=--hyperlinked-sources
-
+  sh "${makeCmd} html haddock EXTRA_HADDOCK_OPTS=--hyperlinked-sources"
+  sh '''
      out="$(mktemp -d)"
      mkdir -p $out/libraries
-     echo $out
 
      cp -R docs/users_guide/build-html/users_guide $out/users-guide
      for d in libraries/*; do
          if [ ! -d $d/dist-install/doc ]; then continue; fi
          mkdir -p $out/libraries/$(basename $d)
-         cp -R $d/dist-install/doc/*/* $out/libraries/$(basename $d)
+         cp -R $d/dist-install/doc/*/* $out/libraries/\$(basename \$d)
      done
      cp -R libraries/*/dist-install/doc/* $out/libraries
      chmod -R ugo+r $out
 
      rsync -az $out/ downloads.haskell.org:public_html/master
      rm -R $out
-     """
+     '''
 }
