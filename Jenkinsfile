@@ -157,47 +157,47 @@ def buildGhc(params) {
   }
 }
 
+def withGhcBinDist(String targetTriple, Closure f) {
+  unstash "bindist-${targetTriple}"
+  def ghcVersion = readFile "ghc-version"
+  sh "tar -xf ${ghcVersion}-${targetTriple}.tar.xz"
+  dir("ghc-${ghcVersion}") { f }
+}
+
 def testGhc(params) {
   String targetTriple = params?.targetTriple
   String makeCmd = params?.makeCmd ?: 'make'
   boolean runNofib = params?.runNofib
 
-  stage('Extract binary distribution') {
-    sh "mkdir tmp"
-    dir "tmp"
-    unstash "bindist-${targetTriple}"
-    def ghcVersion = readFile "ghc-version"
-    sh "tar -xf ${ghcVersion}-${targetTriple}.tar.xz"
-    dir ghcVersion
-  }
-
-  stage('Install testsuite dependencies') {
-    if (params.nightly) {
-      def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
-                  'random', 'regex-compat', 'syb', 'stm', 'utf8-string',
-                  'vector']
-      installPkgs pkgs
+  withGhcBinDist(targetTriple) {
+    stage('Install testsuite dependencies') {
+      if (params.nightly) {
+        def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
+                    'random', 'regex-compat', 'syb', 'stm', 'utf8-string',
+                    'vector']
+        installPkgs pkgs
+      }
     }
-  }
 
-  stage('Run testsuite') {
-    def target = 'test'
-    if (params.nightly) {
-      target = 'slowtest'
+    stage('Run testsuite') {
+      def target = 'test'
+      if (params.nightly) {
+        target = 'slowtest'
+      }
+      sh "${makeCmd} THREADS=${env.THREADS} ${target}"
     }
-    sh "${makeCmd} THREADS=${env.THREADS} ${target}"
-  }
 
-  stage('Run nofib') {
-    if (runNofib) {
-      installPkgs(['regex-compat'])
-      sh """
-         cd nofib
-         ${makeCmd} clean
-         ${makeCmd} boot
-         ${makeCmd} >../nofib.log 2>&1
-         """
-      archiveArtifacts 'nofib.log'
+    stage('Run nofib') {
+      if (runNofib) {
+        installPkgs(['regex-compat'])
+        sh """
+          cd nofib
+          ${makeCmd} clean
+          ${makeCmd} boot
+          ${makeCmd} >../nofib.log 2>&1
+          """
+        archiveArtifacts 'nofib.log'
+      }
     }
   }
 }
