@@ -146,22 +146,35 @@ def buildGhc(params) {
 
   stage('Prepare binary distribution') {
     sh "${makeCmd} binary-dist"
-    def tarName = sh(script: "${makeCmd} -s echo VALUE=BIN_DIST_PREP_TAR_COMP",
-                     returnStdout: true)
-    def ghcVersion = sh(script: "${makeCmd} -s echo VALUE=ProjectVersion",
-                        returnStdout: true)
-    writeFile(file: "ghc-version", text: ghcVersion)
-    archiveArtifacts "../${tarName}"
+    writeJSON(file: 'bindist.json', json: {
+                commit: resolveCommitSha('HEAD')
+                tarName: getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
+                dirName: getMakeValue(makeCmd, 'BIN_DIST_NAME')
+                ghcVersion: getMakeValue(makeCmd, 'ProjectVersion')
+                targetPlatform: getMakeValue(makeCmd, 'TARGETPLATFORM')
+              })
+    sh 'pwd; ls'
     // Write a file so we can easily file the tarball and bindist directory later
-    stash(name: "bindist-${targetTriple}", includes: "ghc-version,../${tarName}")
+    stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
+    archiveArtifacts "${tarName}"
   }
+}
+
+def getMakeValue(String makeCmd, String value) {
+  return sh(script: "${makeCmd} -s echo VALUE=${value}", returnStdout: true)
 }
 
 def withGhcBinDist(String targetTriple, Closure f) {
   unstash "bindist-${targetTriple}"
-  def ghcVersion = readFile "ghc-version"
-  sh "tar -xf ${ghcVersion}-${targetTriple}.tar.xz"
-  dir("ghc-${ghcVersion}") { f }
+  def metadata = readJSON "bindist.json"
+  sh "tar -xf ${metadata.tarName}"
+  dir("${metadata.bindistName}") {
+    try {
+      f
+    } finally {
+      deleteDir()
+    }
+  }
 }
 
 def testGhc(params) {
@@ -202,11 +215,15 @@ def testGhc(params) {
   }
 }
 
+def resolveCommitSha(String ref) {
+  return sh(script: "git rev-parse ${ref}", returnStdout: true)
+}
+
 // Push update to ghc.readthedocs.org.
 // Expects to be sitting in a build source tree.
 def updateReadTheDocs() {
   git clone 'git@github.com:bgamari/ghc-users-guide'
-  def commit = sh(script: "git rev-parse HEAD", returnStdout: true)
+  def commit = resolveCommitSha('HEAD')
   sh """
      export GHC_TREE=\$(pwd)
      cd ghc-users-guide
