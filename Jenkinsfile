@@ -83,6 +83,7 @@ def buildGhc(params) {
   stage('Checkout') {
     checkout scm
     sh "git submodule update --init --recursive"
+    sh "${makeCmd} distclean"
   }
 
   stage('Configure') {
