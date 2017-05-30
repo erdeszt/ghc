@@ -1,5 +1,11 @@
 #!groovy
 
+/*
+  Dependencies:
+   * Pipeline Utility steps plugin
+
+*/
+
 properties(
   [
     parameters(
@@ -166,7 +172,7 @@ def getMakeValue(String makeCmd, String value) {
 
 def withGhcBinDist(String targetTriple, Closure f) {
   unstash "bindist-${targetTriple}"
-  def metadata = readJSON "bindist.json"
+  def metadata = readJSON file: "bindist.json"
   sh "tar -xf ${metadata.tarName}"
   dir("${metadata.bindistName}") {
     try {
