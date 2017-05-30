@@ -35,29 +35,43 @@ parallel (
   // Make
   "windows 64"         : {
     node(label: 'windows && amd64') {
-      sh """
-         export MSYSTEM=MINGW32
-         # Profile tries to read PRINTER and fails due to lack of a newline, hence disabling e
-         set +e
-         source /etc/profile
-         set -e
-         """
-      buildGhc(runNoFib: false)
+      withMingw('MINGW64') { buildGhc(runNoFib: false) }
     }
   },
   /*
   "windows 32"         : {
     node(label: 'windows && amd64') {
-      environment {
-        MSYSTEM=MINGW64
-        PATH = 'C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin:$PATH'
-      }
       buildGhc(runNoFib: false)
     }
   },
   */
   //"osx"                : {node(label: 'darwin') {buildGhc(runNoFib: params.runNoFib)}}
 )
+
+def withMingw(String msystem, Closure f) {
+  def msysRoot = 'C:\\msys64'
+  if (msystem == 'MINGW32') {
+    prefix = '${msysRoot}\\mingw32'
+    carch = 'i686'
+  } else if (msystem == 'MINGW64') {
+    prefix = '${msysRoot}\\mingw64'
+    carch = 'x86_64'
+  } else {
+    fail
+  }
+  chost = '${carch}-w64-mingw32'
+
+  withEnv(["MSYSTEM=${msystem}",
+           "PATH+mingw=C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin",
+           "MSYSTEM_PREFIX=${prefix}",
+           "MSYSTEM_CARCH=${carch}",
+           "MSYSTEM_CHOST=${chost}",
+           "MINGW_CHOST=${chost}",
+           "MINGW_PREFIX=${prefix}",
+           "MINGW_PACKAGE_PREFIX=mingw-w64-${MSYSTEM_CARCH}",
+           "CONFIG_SITE=${prefix}/etc/config.site"
+          ], f)
+}
 
 def installPackages(String[] pkgs) {
   sh "cabal install -j${env.THREADS} --with-compiler=`pwd`/inplace/bin/ghc-stage2 --package-db=`pwd`/inplace/lib/package.conf.d ${pkgs.join(' ')}"
