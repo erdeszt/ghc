@@ -6,6 +6,8 @@
 
 */
 
+import net.sf.json.JSONObject
+
 properties(
   [
     parameters(
@@ -152,13 +154,13 @@ def buildGhc(params) {
 
   stage('Prepare binary distribution') {
     sh "${makeCmd} binary-dist"
-    writeJSON(file: 'bindist.json', json: {
-                commit: resolveCommitSha('HEAD')
-                tarName: getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
-                dirName: getMakeValue(makeCmd, 'BIN_DIST_NAME')
-                ghcVersion: getMakeValue(makeCmd, 'ProjectVersion')
-                targetPlatform: getMakeValue(makeCmd, 'TARGETPLATFORM')
-              })
+    def json = new JSONObject()
+    json.put('commit', resolveCommitSha('HEAD'))
+    json.put('tarName', getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP'))
+    json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
+    json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
+    json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
+    writeJSON(file: 'bindist.json', json: json)
     sh 'pwd; ls'
     // Write a file so we can easily file the tarball and bindist directory later
     stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
