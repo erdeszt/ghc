@@ -155,8 +155,9 @@ def buildGhc(params) {
   stage('Prepare binary distribution') {
     sh "${makeCmd} binary-dist"
     def json = new JSONObject()
+    def tarName = getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
     json.put('commit', resolveCommitSha('HEAD'))
-    json.put('tarName', getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP'))
+    json.put('tarName', tarName)
     json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
     json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
     json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
