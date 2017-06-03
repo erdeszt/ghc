@@ -162,8 +162,9 @@ def buildGhc(params) {
     json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
     json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
     json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
+    echo "${json}"
+    echo json.toString()
     writeJSON(file: 'bindist.json', json: json)
-    sh 'cat bindist.json'
     // Write a file so we can easily file the tarball and bindist directory later
     stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
     archiveArtifacts "${tarName}"
@@ -177,9 +178,9 @@ def getMakeValue(String makeCmd, String value) {
 def withGhcBinDist(String targetTriple, Closure f) {
   unstash "bindist-${targetTriple}"
   def metadata = readJSON file: "bindist.json"
-  sh 'cat bindist.json'
+  echo "${metadata}"
   sh "tar -xf ${metadata.tarName}"
-  dir("${metadata.bindistName}") {
+  dir("${metadata.dirName}") {
     try {
       f
     } finally {
