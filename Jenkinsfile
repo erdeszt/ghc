@@ -35,10 +35,11 @@ stage("Build source distribution") {
         """
     }
     stage("Build tarballs") {
+      def version = getMakeValue('make', 'ProjectVersion')
       sh "make sdist"
-      sh "mv sdistprep/ghc-*.tar.xz ghc-src.tar.xz"
-      sh "mv sdistprep/ghc-*-testsuite.tar.xz ghc-testsuite.tar.xz"
-      sh "mv sdistprep/ghc-*-windows-extra-src-*.tar.xz ghc-win32-tarballs.tar.xz"
+      sh "mv sdistprep/ghc-${version}-src.tar.xz ghc-src.tar.xz"
+      sh "mv sdistprep/ghc-${version}-testsuite.tar.xz ghc-testsuite.tar.xz"
+      sh "mv sdistprep/ghc-${version}-windows-extra-src.tar.xz ghc-win32-tarballs.tar.xz"
       stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz')
       stash(name: 'testsuite-dist', includes: 'ghc-testsuite.tar.xz')
     }
@@ -194,7 +195,7 @@ def buildGhc(params) {
 }
 
 def getMakeValue(String makeCmd, String value) {
-  return sh(script: "${makeCmd} -s echo VALUE=${value}", returnStdout: true)
+  return sh(script: "${makeCmd} -s echo! VALUE=${value}", returnStdout: true)
 }
 
 def withTempDir(String name, Closure f) {
