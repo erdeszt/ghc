@@ -43,7 +43,6 @@ stage("Build source distribution") {
 
       def json = new JSONObject()
       json.put('dirName', "ghc-${version}" as String)
-      echo "${json}"
       writeJSON(file: 'src-dist.json', json: json)
 
       stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json')
@@ -225,8 +224,6 @@ def withGhcSrcDist(Closure f) {
 
     def metadata = readJSON file: 'src-dist.json'
     sh "cat src-dist.json"
-    echo "${metadata}"
-    sh "echo ${metadata.dirName}; ls ${metadata.dirName}"
     dir(metadata.dirName) {
       f()
     }
@@ -238,7 +235,6 @@ def withGhcBinDist(String targetTriple, Closure f) {
     unstash "bindist-${targetTriple}"
     unstash "testsuite-dist"
     def metadata = readJSON file: "bindist.json"
-    echo "${metadata}"
     sh "tar -xf ${metadata.tarName}"
     sh "tar -xf ghc-testsuite.tar.xz"
     dir(metadata.dirName) {
