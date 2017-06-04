@@ -279,7 +279,7 @@ def testGhc(params) {
 }
 
 def resolveCommitSha(String ref) {
-  return sh(script: "git rev-parse ${ref}", returnStdout: true)
+  return sh(script: "git rev-parse ${ref}", returnStdout: true).trim()
 }
 
 // Push update to ghc.readthedocs.org.
