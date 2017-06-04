@@ -223,8 +223,9 @@ def withGhcSrcDist(Closure f) {
     }
 
     def metadata = readJSON file: 'src-dist.json'
+    sh "cat src-dist.json"
     echo "${metadata}"
-    sh "${metadata.dirName}"
+    sh "echo ${metadata.dirName}; ls ${metadata.dirName}"
     dir(metadata.dirName) {
       f()
     }
