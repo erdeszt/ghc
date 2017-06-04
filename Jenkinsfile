@@ -253,6 +253,10 @@ def testGhc(params) {
   boolean runNofib = params?.runNofib
 
   withGhcBinDist(targetTriple) {
+    stage('Configure') {
+      sh './configure'
+    }
+
     stage('Install testsuite dependencies') {
       if (params.nightly) {
         def pkgs = ['mtl', 'parallel', 'parsec', 'primitive', 'QuickCheck',
