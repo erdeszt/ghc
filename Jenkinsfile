@@ -40,7 +40,12 @@ stage("Build source distribution") {
       sh "mv sdistprep/ghc-${version}-src.tar.xz ghc-src.tar.xz"
       sh "mv sdistprep/ghc-${version}-testsuite.tar.xz ghc-testsuite.tar.xz"
       sh "mv sdistprep/ghc-${version}-windows-extra-src.tar.xz ghc-win32-tarballs.tar.xz"
-      stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz')
+
+      def json = new JSONObject()
+      json.put('dirName', "ghc-${version}")
+      writeJSON(file: 'src-dist.json', json: json)
+
+      stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json')
       stash(name: 'testsuite-dist', includes: 'ghc-testsuite.tar.xz')
     }
   }
@@ -216,7 +221,9 @@ def withGhcSrcDist(Closure f) {
       sh 'tar -xf ghc-src.tar.xz'
       sh 'tar -xf ghc-win32-tarballs.tar.xz'
     }
-    dir('ghc-*') {
+
+    def metadata = readJSON file: 'src-dist.json'
+    dir(metadata.dirName) {
       f()
     }
   }
