@@ -156,14 +156,13 @@ def buildGhc(params) {
     sh "${makeCmd} binary-dist"
     def json = new JSONObject()
     def tarPath = getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
-    def tarName = sh "basename ${tarPath}"
+    def tarName = sh(script: "basename ${tarPath}", returnStdout: true)
     json.put('commit', resolveCommitSha('HEAD'))
     json.put('tarName', tarName)
     json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
     json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
     json.put('targetPlatform', getMakeValue(makeCmd, 'TARGETPLATFORM'))
     echo "${json}"
-    echo json.toString()
     writeJSON(file: 'bindist.json', json: json)
     // Write a file so we can easily file the tarball and bindist directory later
     stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
