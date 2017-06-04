@@ -29,10 +29,7 @@ stage("Build source distribution") {
          """
     }
     stage("Configuring tree") {
-      sh """
-        ./boot
-        ./configure
-        """
+      sh "./configure"
     }
     stage("Build tarballs") {
       def version = getMakeValue('make', 'ProjectVersion')
