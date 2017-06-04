@@ -29,7 +29,10 @@ stage("Build source distribution") {
          """
     }
     stage("Configuring tree") {
-      sh "./configure"
+      sh """
+         ./boot
+         ./configure
+         """
     }
     stage("Build tarballs") {
       def version = getMakeValue('make', 'ProjectVersion')
@@ -162,10 +165,7 @@ def buildGhc(params) {
       if (unreg) {
         configure_opts += '--enable-unregisterised'
       }
-      sh """
-        ./boot
-        ./configure ${configure_opts.join(' ')}
-        """
+      sh "./configure ${configure_opts.join(' ')}"
     }
 
     stage('Build') {
