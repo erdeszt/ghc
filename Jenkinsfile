@@ -196,7 +196,10 @@ def getMakeValue(String makeCmd, String value) {
 }
 
 def withTempDir(String name, Closure f) {
-  sh "mkdir ${name}"
+  sh """
+     rm -Rf ${name} || true
+     mkdir ${name}
+     """
   dir(name) {
     try {
       f()
