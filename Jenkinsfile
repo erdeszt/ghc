@@ -223,6 +223,8 @@ def withGhcSrcDist(Closure f) {
     }
 
     def metadata = readJSON file: 'src-dist.json'
+    echo "${metadata}"
+    sh "${metadata.dirName}"
     dir(metadata.dirName) {
       f()
     }
@@ -237,7 +239,7 @@ def withGhcBinDist(String targetTriple, Closure f) {
     echo "${metadata}"
     sh "tar -xf ${metadata.tarName}"
     sh "tar -xf ghc-testsuite.tar.xz"
-    dir("${metadata.dirName}") {
+    dir(metadata.dirName) {
       try {
         f()
       } finally {
