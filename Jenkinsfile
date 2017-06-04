@@ -42,7 +42,8 @@ stage("Build source distribution") {
       sh "mv sdistprep/ghc-${version}-windows-extra-src.tar.xz ghc-win32-tarballs.tar.xz"
 
       def json = new JSONObject()
-      json.put('dirName', "ghc-${version}")
+      json.put('dirName', "ghc-${version}" as String)
+      echo "${json}"
       writeJSON(file: 'src-dist.json', json: json)
 
       stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json')
