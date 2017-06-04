@@ -181,7 +181,7 @@ def withGhcBinDist(String targetTriple, Closure f) {
   sh "tar -xf ${metadata.tarName}"
   dir("${metadata.dirName}") {
     try {
-      f
+      f()
     } finally {
       deleteDir()
     }
