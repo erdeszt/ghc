@@ -196,7 +196,7 @@ def buildGhc(params) {
   }
 }
 
-def getMakeValue(String makeCmd, String value) {
+String getMakeValue(String makeCmd, String value) {
   return sh(script: "${makeCmd} -s echo! VALUE=${value}", returnStdout: true)
 }
 
