@@ -271,7 +271,8 @@ def testGhc(params) {
       if (params.nightly) {
         target = 'slowtest'
       }
-      sh "${makeCmd} THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} -Ctestsuite/tests stage=2 LOCAL=0 THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} -Ctestsuite/tests/stage1 stage=1 LOCAL=0 THREADS=${env.THREADS} ${target}"
     }
 
     stage('Run nofib') {
