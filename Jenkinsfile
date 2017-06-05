@@ -45,6 +45,7 @@ stage("Build source distribution") {
 
       def json = new JSONObject()
       json.put('dirName', "ghc-${version}" as String)
+      json.put('commit', resolveCommitSha('HEAD'))
       writeJSON(file: 'src-dist.json', json: json)
 
       stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json')
@@ -191,7 +192,6 @@ def buildGhc(params) {
       def json = new JSONObject()
       def tarPath = getMakeValue(makeCmd, 'BIN_DIST_PREP_TAR_COMP')
       def tarName = sh(script: "basename ${tarPath}", returnStdout: true)
-      json.put('commit', resolveCommitSha('HEAD'))
       json.put('tarName', tarName)
       json.put('dirName', getMakeValue(makeCmd, 'BIN_DIST_NAME'))
       json.put('ghcVersion', getMakeValue(makeCmd, 'ProjectVersion'))
