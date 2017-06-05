@@ -1,9 +1,11 @@
 #!groovy
 
 /*
-  Dependencies:
+  Jenkins dependencies:
    * Pipeline Utility steps plugin
 
+  Linux (Debian) worker dependencies:
+   * xutil-dev curl automake autoconf libtool python3 python3-sphinx, llvm-4.0
 */
 
 import net.sf.json.JSONObject
@@ -271,8 +273,8 @@ def testGhc(params) {
       if (params.nightly) {
         target = 'slowtest'
       }
-      sh "${makeCmd} -Ctestsuite/tests stage=2 LOCAL=0 THREADS=${env.THREADS} ${target}"
-      sh "${makeCmd} -Ctestsuite/tests/stage1 stage=1 LOCAL=0 THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} -Ctestsuite/tests stage=2 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} -Ctestsuite/tests/stage1 stage=1 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
     }
 
     stage('Run nofib') {
