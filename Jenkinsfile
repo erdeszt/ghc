@@ -193,7 +193,7 @@ def buildGhc(params) {
       writeJSON(file: 'bindist.json', json: json)
       // Write a file so we can easily file the tarball and bindist directory later
       stash(name: "bindist-${targetTriple}", includes: "bindist.json,${tarName}")
-      archiveArtifacts "${tarName}"
+      archiveArtifacts artifacts: tarName
     }
   }
 }
@@ -286,7 +286,7 @@ def testGhc(params) {
           ${makeCmd} boot
           ${makeCmd} >../nofib.log 2>&1
           """
-        archiveArtifacts 'nofib.log'
+        archiveArtifacts artifacts: 'nofib.log'
       }
     }
   }
