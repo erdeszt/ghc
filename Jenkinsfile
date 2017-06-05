@@ -96,6 +96,13 @@ parallel (
   */
 )
 
+if (params.runNofib) {
+  node(label: 'linux && amd64 && perf') {
+    nofib(targetTriple: 'x86_64-linux-gnu')
+  }
+}
+
+
 def withMingw(String msystem, Closure f) {
   // Derived from msys2's /etc/msystem
   def msysRoot = 'C:\\msys64'
@@ -252,7 +259,6 @@ def withGhcBinDist(String targetTriple, Closure f) {
 def testGhc(params) {
   String targetTriple = params?.targetTriple
   String makeCmd = params?.makeCmd ?: 'make'
-  boolean runNofib = params?.runNofib
 
   withGhcBinDist(targetTriple) {
     stage('Configure') {
@@ -276,18 +282,22 @@ def testGhc(params) {
       sh "${makeCmd} -Ctestsuite/tests stage=2 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
       sh "${makeCmd} -Ctestsuite/tests/stage1 stage=1 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
     }
+  }
+}
 
+def nofib(params) {
+  String targetTriple = params?.targetTriple
+  String makeCmd = params?.makeCmd ?: 'make'
+  withGhcBinDist(targetTriple) {
     stage('Run nofib') {
-      if (runNofib) {
-        installPkgs(['regex-compat'])
-        sh """
-          cd nofib
-          ${makeCmd} clean
-          ${makeCmd} boot
-          ${makeCmd} >../nofib.log 2>&1
-          """
-        archiveArtifacts artifacts: 'nofib.log'
-      }
+      installPkgs(['regex-compat'])
+      sh """
+        cd nofib
+        ${makeCmd} clean
+        ${makeCmd} boot
+        ${makeCmd} >../nofib.log 2>&1
+        """
+      archiveArtifacts artifacts: 'nofib.log'
     }
   }
 }
