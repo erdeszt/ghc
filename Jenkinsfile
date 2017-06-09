@@ -108,18 +108,21 @@ def withMingw(String msystem, Closure f) {
   // Derived from msys2's /etc/msystem
   def msysRoot = 'C:\\msys64'
   if (msystem == 'MINGW32') {
-    prefix = '${msysRoot}\\mingw32'
+    prefix = "${msysRoot}\\mingw32"
     carch = 'i686'
+    ghcPath = '$HOME/ghc-8.0.2-i386/bin'
   } else if (msystem == 'MINGW64') {
-    prefix = '${msysRoot}\\mingw64'
+    prefix = "${msysRoot}\\mingw64"
     carch = 'x86_64'
+    ghcPath = '$HOME/ghc-8.0.2-x86_64/bin'
   } else {
     fail
   }
   chost = '${carch}-w64-mingw32'
 
   withEnv(["MSYSTEM=${msystem}",
-           "PATH+mingw=C:\\msys64\\mingw32\\bin:C:\\msys64\\home\\ben\\ghc-8.0.2-i386\\bin",
+           "PATH+mingw=${prefix}\\bin",
+           "PATH+ghc=${ghcPath}",
            "MSYSTEM_PREFIX=${prefix}",
            "MSYSTEM_CARCH=${carch}",
            "MSYSTEM_CHOST=${chost}",
