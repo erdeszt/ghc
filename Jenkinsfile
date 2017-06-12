@@ -48,8 +48,11 @@ stage("Build source distribution") {
       json.put('commit', resolveCommitSha('HEAD'))
       writeJSON(file: 'src-dist.json', json: json)
 
-      stash(name: 'source-dist', includes: 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json')
+      def src_dist_files = 'ghc-src.tar.xz,ghc-win32-tarballs.tar.xz,src-dist.json'
+      stash(name: 'source-dist', includes: src_dist_files)
       stash(name: 'testsuite-dist', includes: 'ghc-testsuite.tar.xz')
+      archiveArtifacts artifacts: src_dist_files
+      archiveArtifacts artifacts: 'ghc-testsuite.tar.xz'
     }
   }
 }
@@ -261,11 +264,15 @@ def withGhcBinDist(String targetTriple, Closure f) {
 
 def testGhc(params) {
   String targetTriple = params?.targetTriple
+  // See Note [Spaces in TEST_HC]
+  String instDir="bindisttest/install   dir"
+  String testGhc="${instDir}/bin/ghc"
   String makeCmd = params?.makeCmd ?: 'make'
 
   withGhcBinDist(targetTriple) {
     stage('Configure') {
-      sh './configure'
+      sh "./configure --prefix=\"`pwd`/${inst_dir}\""
+      sh "${makeCmd} install"
     }
 
     stage('Install testsuite dependencies') {
@@ -282,8 +289,7 @@ def testGhc(params) {
       if (params.nightly) {
         target = 'slowtest'
       }
-      sh "${makeCmd} -Ctestsuite/tests stage=2 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
-      sh "${makeCmd} -Ctestsuite/tests/stage1 stage=1 LOCAL=0 BINDIST=YES THREADS=${env.THREADS} ${target}"
+      sh "${makeCmd} -Ctestsuite/tests LOCAL=0 BINDIST=YES THREADS=${env.THREADS} TEST_HC=\"`pwd`/${testGhc}\" ${target}"
     }
   }
 }
