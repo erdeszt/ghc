@@ -122,7 +122,7 @@ def withMingw(String msystem, Closure f) {
   } else {
     fail
   }
-  chost = '${carch}-w64-mingw32'
+  chost = "${carch}-w64-mingw32"
 
   withEnv(["MSYSTEM=${msystem}",
            "PATH+mingw=${prefix}\\bin",
