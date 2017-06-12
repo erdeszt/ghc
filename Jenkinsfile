@@ -110,6 +110,7 @@ if (params.runNofib) {
 def withMingw(String msystem, Closure f) {
   // Derived from msys2's /etc/msystem
   def msysRoot = 'C:\\msys64'
+  String carch, prefix, ghcPath
   if (msystem == 'MINGW32') {
     prefix = "${msysRoot}\\mingw32"
     carch = 'i686'
