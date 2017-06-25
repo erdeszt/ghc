@@ -83,6 +83,9 @@ Now we generate ::
 - Windows no longer uses an intermediate GCC driver and instead calls GCC
   directly. See :ghc-ticket:`13709`.
 
+- The optional ``instance`` keyword is now usable in type family instance
+  declarations. See :ghc-ticket:`13747`
+
 - Lots of other bugs. See `Trac <https://ghc.haskell.org/trac/ghc/query?status=closed&milestone=8.4.1&col=id&col=summary&col=status&col=type&col=priority&col=milestone&col=component&order=priority>`_
   for a complete list.
 
