@@ -1215,23 +1215,20 @@ opt_family   :: { [AddAnn] }
               : {- empty -}   { [] }
               | 'family'      { [mj AnnFamily $1] }
 
+opt_instance :: { [AddAnn] }
+              : {- empty -} { [] }
+              | 'instance'  { [mj AnnInstance $1] }
+
 -- Associated type instances
 --
 at_decl_inst :: { LInstDecl GhcPs }
            -- type instance declarations, with optional 'instance' keyword
-        : 'type' ty_fam_inst_eqn
-                -- Note the use of type for the head; this allows
-                -- infix type constructors and type patterns
-                {% ams $2 (fst $ unLoc $2) >>
-                   amms (mkTyFamInst (comb2 $1 $2) (snd $ unLoc $2))
-                        (mj AnnType $1:(fst $ unLoc $2)) }
-
-        | 'type' 'instance' ty_fam_inst_eqn
+        : 'type' opt_instance ty_fam_inst_eqn
                 -- Note the use of type for the head; this allows
                 -- infix type constructors and type patterns
                 {% ams $3 (fst $ unLoc $3) >>
                    amms (mkTyFamInst (comb2 $1 $3) (snd $ unLoc $3))
-                        (mj AnnType $1:mj AnnInstance $2:(fst $ unLoc $3)) }
+                        (mj AnnType $1:$2++(fst $ unLoc $3)) }
 
         -- data/newtype instance declaration
         | data_or_newtype capi_ctype tycl_hdr constrs maybe_derivings
