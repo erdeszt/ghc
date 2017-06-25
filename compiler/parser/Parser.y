@@ -1230,14 +1230,22 @@ at_decl_inst :: { LInstDecl GhcPs }
                    amms (mkTyFamInst (comb2 $1 $3) (snd $ unLoc $3))
                         (mj AnnType $1:$2++(fst $ unLoc $3)) }
 
-        -- data/newtype instance declaration
+        -- data/newtype instance declaration, with optional 'instance' keyword
+        -- (can't use opt_instance because you get reduce/reduce errors)
         | data_or_newtype capi_ctype tycl_hdr constrs maybe_derivings
                {% amms (mkDataFamInst (comb4 $1 $3 $4 $5) (snd $ unLoc $1) $2 $3
                                     Nothing (reverse (snd $ unLoc $4))
                                             (fmap reverse $5))
                        ((fst $ unLoc $1):(fst $ unLoc $4)) }
 
-        -- GADT instance declaration
+        | data_or_newtype 'instance' capi_ctype tycl_hdr constrs maybe_derivings
+               {% amms (mkDataFamInst (comb4 $1 $4 $5 $6) (snd $ unLoc $1) $3 $4
+                                    Nothing (reverse (snd $ unLoc $5))
+                                            (fmap reverse $6))
+                       ((fst $ unLoc $1):mj AnnInstance $2:(fst $ unLoc $5)) }
+
+        -- GADT instance declaration, with optional 'instance' keyword
+        -- (can't use opt_instance because you get reduce/reduce errors)
         | data_or_newtype capi_ctype tycl_hdr opt_kind_sig
                  gadt_constrlist
                  maybe_derivings
@@ -1245,6 +1253,14 @@ at_decl_inst :: { LInstDecl GhcPs }
                                 $3 (snd $ unLoc $4) (snd $ unLoc $5)
                                 (fmap reverse $6))
                         ((fst $ unLoc $1):(fst $ unLoc $4)++(fst $ unLoc $5)) }
+
+        | data_or_newtype 'instance' capi_ctype tycl_hdr opt_kind_sig
+                 gadt_constrlist
+                 maybe_derivings
+                {% amms (mkDataFamInst (comb4 $1 $4 $6 $7) (snd $ unLoc $1) $3
+                                $4 (snd $ unLoc $5) (snd $ unLoc $6)
+                                (fmap reverse $7))
+                        ((fst $ unLoc $1):mj AnnInstance $2:(fst $ unLoc $5)++(fst $ unLoc $6)) }
 
 data_or_newtype :: { Located (AddAnn, NewOrData) }
         : 'data'        { sL1 $1 (mj AnnData    $1,DataType) }
